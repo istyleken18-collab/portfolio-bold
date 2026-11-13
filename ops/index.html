@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>社長ダッシュボード | アイスタイル</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a0a0a'/%3E%3Crect x='3' y='3' width='26' height='26' fill='%23d0ff00'/%3E%3Crect x='7' y='18' width='4' height='7' fill='%230a0a0a'/%3E%3Crect x='14' y='12' width='4' height='13' fill='%230a0a0a'/%3E%3Crect x='21' y='7' width='4' height='18' fill='%230a0a0a'/%3E%3C/svg%3E">
+<style>
+/* ============================================================
+   社長ダッシュボード — Bold Industrial Impact / 携帯ファースト
+   黒地 + 蛍光イエローグリーン / 角丸なし / 影はぼかし0
+   データは端末内(localStorage)だけに保存。外部へ送信しません。
+   ============================================================ */
+
+:root{
+  --c-primary:#d0ff00;
+  --c-accent:#ff3d00;
+  --c-warn:#ffb000;
+  --c-ok:#00e5a0;
+  --bg-1:#0a0a0a;
+  --bg-2:#141414;
+  --bg-3:#1e1e1e;
+  --text-1:#f5f5f5;
+  --text-2:#9a9a9a;
+  --text-inv:#0a0a0a;
+  --border:#333333;
+  --font-sans:"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;
+  --font-mono:"SF Mono","Roboto Mono","Consolas",monospace;
+  --shadow-sm:4px 4px 0 #333333;
+  --dur:0.1s;
+  --ease:steps(2,end);
+  --tabbar-h:58px;
+}
+
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;border-radius:0;}
+dialog{margin:auto;} /* reset の margin:0 で中央寄せが壊れるのを戻す */
+
+html{background:var(--bg-1);-webkit-text-size-adjust:100%;}
+body{
+  font-family:var(--font-sans);
+  font-size:15px;
+  line-height:1.6;
+  color:var(--text-1);
+  background:var(--bg-1);
+  /* タブバー + iPhone のホームインジケータ分を確保 */
+  padding-bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 16px);
+  overscroll-behavior-y:contain;
+}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;}
+ul{list-style:none;}
+:focus-visible{outline:3px solid var(--c-primary);outline-offset:2px;}
+.on-primary :focus-visible{outline-color:var(--text-inv);}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;}
+
+/* ---- header ---- */
+.hd{
+  position:sticky;top:0;z-index:10;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:12px 16px;
+  padding-top:calc(12px + env(safe-area-inset-top));
+  background:var(--bg-1);
+  border-bottom:2px solid var(--border);
+}
+.hd-title{font-size:16px;font-weight:900;letter-spacing:-0.03em;}
+.hd-title span{color:var(--c-primary);}
+.hd-date{
+  font-family:var(--font-mono);font-size:11px;font-weight:700;
+  letter-spacing:0.08em;color:var(--text-2);white-space:nowrap;
+}
+
+/* ---- panels ---- */
+main{padding:16px;display:grid;gap:16px;}
+.panel{display:grid;gap:16px;}
+.panel[hidden]{display:none;}
+
+.card{background:var(--bg-2);border:2px solid var(--border);padding:16px;}
+.card-t{
+  display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+  font-family:var(--font-mono);font-size:11px;font-weight:700;
+  letter-spacing:0.1em;text-transform:uppercase;color:var(--text-2);
+  margin-bottom:12px;
+}
+.card-t .n{color:var(--c-primary);font-size:13px;}
+.card.alarm{border-color:var(--c-accent);}
+.card.alarm .card-t .n{color:var(--c-accent);}
+
+/* ---- 入力 ---- */
+.field{display:grid;gap:6px;margin-bottom:14px;}
+.field label{
+  font-family:var(--font-mono);font-size:11px;font-weight:700;
+  letter-spacing:0.08em;color:var(--text-2);
+}
+input[type="text"],input[type="date"],textarea,select{
+  width:100%;
+  font-family:var(--font-mono);
+  font-size:17px; /* iOS の自動ズームを防ぐため 16px 以上 */
+  font-weight:700;
+  color:var(--text-1);
+  background:var(--bg-1);
+  border:2px solid var(--border);
+  padding:12px;
+  -webkit-appearance:none;appearance:none;
+}
+textarea{font-family:var(--font-sans);font-weight:400;line-height:1.6;resize:vertical;min-height:72px;}
+select{
+  /* ネイティブの矢印を消したので、代わりの印を背景で描く */
+  background-image:linear-gradient(45deg,transparent 50%,var(--c-primary) 50%),
+                   linear-gradient(135deg,var(--c-primary) 50%,transparent 50%);
+  background-position:calc(100% - 18px) 50%,calc(100% - 12px) 50%;
+  background-size:6px 6px,6px 6px;
+  background-repeat:no-repeat;
+  padding-right:36px;
+}
+input:focus,textarea:focus,select:focus{border-color:var(--c-primary);outline:none;}
+input::placeholder,textarea::placeholder{color:#5a5a5a;font-weight:400;}
+.field-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+
+.btn{
+  display:block;width:100%;
+  font-size:16px;font-weight:900;letter-spacing:0.02em;text-align:center;
+  padding:15px;min-height:52px; /* 親指で押せる大きさ */
+  background:var(--c-primary);color:var(--text-inv);
+  border:2px solid var(--c-primary);
+  transition:transform var(--dur) var(--ease);
+}
+.btn:active{transform:translate(2px,2px);}
+.btn-sub{background:transparent;color:var(--text-1);border-color:var(--border);}
+.btn-sub:hover{border-color:var(--c-primary);color:var(--c-primary);}
+.btn-danger{background:transparent;color:var(--c-accent);border-color:var(--c-accent);}
+.btn-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+
+/* ---- 絞り込みチップ ---- */
+.chips{display:flex;flex-wrap:wrap;gap:4px;}
+.chip{
+  font-family:var(--font-mono);font-size:12px;font-weight:700;
+  color:var(--text-2);background:transparent;
+  border:2px solid var(--border);
+  padding:9px 11px;min-height:38px;
+  transition:color var(--dur) var(--ease),border-color var(--dur) var(--ease),background-color var(--dur) var(--ease);
+}
+.chip:hover{color:var(--c-primary);border-color:var(--c-primary);}
+.chip[aria-pressed="true"]{background:var(--c-primary);border-color:var(--c-primary);color:var(--text-inv);}
+
+/* ---- KPI ---- */
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;}
+.kpi{background:var(--bg-2);border:2px solid var(--border);padding:14px;}
+.kpi-l{
+  font-family:var(--font-mono);font-size:10px;font-weight:700;
+  letter-spacing:0.1em;text-transform:uppercase;color:var(--text-2);
+}
+.kpi-v{
+  font-size:28px;font-weight:900;letter-spacing:-0.04em;line-height:1.1;
+  margin-top:6px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;
+}
+.kpi-s{font-family:var(--font-mono);font-size:11px;font-weight:700;margin-top:4px;color:var(--text-2);}
+.bad{color:var(--c-accent);}
+.warn{color:var(--c-warn);}
+.good{color:var(--c-ok);}
+.hl{color:var(--c-primary);}
+
+/* ---- リスト ---- */
+.list{display:grid;gap:2px;}
+.row{background:var(--bg-2);border:2px solid var(--border);padding:12px;}
+.row.bad{border-color:var(--c-accent);}
+.row.warn{border-color:var(--c-warn);}
+.row-top{display:flex;align-items:flex-start;gap:8px;}
+.row-name{
+  flex:1;min-width:0;
+  font-size:15px;font-weight:900;letter-spacing:-0.02em;
+  text-align:left;overflow-wrap:anywhere;
+}
+.row-name:hover{color:var(--c-primary);}
+.tag{
+  flex:none;
+  font-family:var(--font-mono);font-size:10px;font-weight:700;
+  letter-spacing:0.06em;
+  border:2px solid var(--border);padding:2px 6px;color:var(--text-2);
+}
+.tag.on{border-color:var(--c-primary);color:var(--c-primary);}
+.row-meta{
+  font-family:var(--font-mono);font-size:11px;font-weight:700;
+  letter-spacing:0.04em;color:var(--text-2);margin-top:6px;
+  overflow-wrap:anywhere;
+}
+.row-meta .bad{color:var(--c-accent);}
+.row-meta .warn{color:var(--c-warn);}
+.row-next{
+  font-size:13px;font-weight:700;margin-top:6px;
+  padding-left:10px;border-left:3px solid var(--border);
+  overflow-wrap:anywhere;
+}
+.row-acts{display:flex;gap:4px;margin-top:10px;}
+.act{
+  flex:1;
+  font-family:var(--font-mono);font-size:11px;font-weight:700;
+  letter-spacing:0.04em;
+  border:2px solid var(--border);padding:9px 4px;min-height:38px;
+  color:var(--text-2);
+  transition:color var(--dur) var(--ease),border-color var(--dur) var(--ease);
+}
+.act:hover{color:var(--c-primary);border-color:var(--c-primary);}
+.act.touch{color:var(--c-primary);border-color:var(--c-primary);}
+.act.del{flex:0 0 42px;}
+.act.del:hover{color:var(--c-accent);border-color:var(--c-accent);}
+
+.empty{
+  font-family:var(--font-mono);font-size:12px;font-weight:700;
+  letter-spacing:0.06em;color:var(--text-2);
+  border:2px dashed var(--border);padding:20px;text-align:center;
+}
+.ok-msg{
+  font-family:var(--font-mono);font-size:12px;font-weight:700;
+  letter-spacing:0.06em;color:var(--c-ok);
+  border:2px solid var(--c-ok);padding:16px;text-align:center;
+}
+
+/* ---- 表 ---- */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:12px;}
+th,td{
+  padding:9px 10px;text-align:right;white-space:nowrap;
+  border-bottom:2px solid var(--border);font-variant-numeric:tabular-nums;
+}
+th{font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-2);}
+td:first-child,th:first-child{text-align:left;}
+tbody tr:last-child td{border-bottom:none;}
+
+/* ---- タブバー ---- */
+.tabbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:20;
+  display:grid;grid-template-columns:repeat(5,1fr);gap:2px;
+  background:var(--border);border-top:2px solid var(--border);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.tab{
+  display:grid;place-items:center;gap:1px;
+  height:var(--tabbar-h);
+  background:var(--bg-1);color:var(--text-2);
+  font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:0.02em;
+  transition:color var(--dur) var(--ease),background-color var(--dur) var(--ease);
+  position:relative;
+}
+.tab-i{font-size:16px;font-weight:900;line-height:1;}
+.tab[aria-selected="true"]{background:var(--c-primary);color:var(--text-inv);}
+.badge{
+  position:absolute;top:5px;right:5px;
+  min-width:17px;height:17px;padding:0 4px;
+  background:var(--c-accent);color:#fff;
+  font-size:10px;font-weight:900;line-height:17px;text-align:center;
+}
+.tab[aria-selected="true"] .badge{background:var(--text-inv);color:var(--c-primary);}
+.badge[hidden]{display:none;}
+
+/* ---- dialog ---- */
+dialog{
+  width:min(560px,calc(100vw - 24px));
+  max-height:calc(100vh - 48px);
+  overflow-y:auto;
+  background:var(--bg-2);
+  border:2px solid var(--c-primary);
+  color:var(--text-1);
+  padding:16px;
+}
+dialog::backdrop{background:rgba(10,10,10,0.88);}
+.dlg-t{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  font-size:15px;font-weight:900;letter-spacing:-0.02em;margin-bottom:14px;
+}
+.dlg-x{font-size:22px;font-weight:900;color:var(--text-2);padding:4px 10px;}
+.dlg-x:hover{color:var(--c-accent);}
+
+/* ---- トースト ---- */
+.toast{
+  position:fixed;left:16px;right:16px;
+  bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 16px);
+  z-index:30;
+  background:var(--c-primary);color:var(--text-inv);
+  font-size:14px;font-weight:900;text-align:center;padding:14px;
+  box-shadow:var(--shadow-sm);
+}
+.toast[hidden]{display:none;}
+
+.note{
+  font-family:var(--font-mono);font-size:11px;line-height:1.75;
+  color:var(--text-2);letter-spacing:0.02em;
+}
+.note b{color:var(--c-primary);}
+.note .bad{color:var(--c-accent);}
+
+@media (min-width:700px){
+  main{max-width:780px;margin:0 auto;}
+  .kpis{grid-template-columns:repeat(4,minmax(0,1fr));}
+}
+</style>
+</head>
+<body>
+
+<header class="hd">
+  <div class="hd-title">社長<span>ダッシュボード</span></div>
+  <div class="hd-date" id="hdDate"></div>
+</header>
+
+<main>
+
+  <!-- ============ 今日 ============ -->
+  <section class="panel" id="p-today" aria-labelledby="t-today">
+    <h1 class="sr" id="t-today">今日</h1>
+    <div class="kpis" id="todayKpis"></div>
+    <div id="todaySections"></div>
+  </section>
+
+  <!-- ============ 案件 ============ -->
+  <section class="panel" id="p-cases" aria-labelledby="t-cases" hidden>
+    <h1 class="sr" id="t-cases">案件</h1>
+    <button type="button" class="btn on-primary" id="btnNewCase">＋ 案件を追加</button>
+    <div class="card">
+      <div class="card-t">絞り込み</div>
+      <div class="chips" id="caseFilter"></div>
+    </div>
+    <ul class="list" id="caseList"></ul>
+  </section>
+
+  <!-- ============ アフター ============ -->
+  <section class="panel" id="p-after" aria-labelledby="t-after" hidden>
+    <h1 class="sr" id="t-after">アフターフォロー</h1>
+    <button type="button" class="btn on-primary" id="btnNewAfter">＋ 引渡し済みを追加</button>
+    <p class="note">
+      引渡し日を入れるだけで、<b>点検時期・保証満了（5年）・引渡し記念日</b>を自動で算出します。
+      今月該当するものは「今日」タブの先頭に出ます。
+    </p>
+    <ul class="list" id="afterList"></ul>
+  </section>
+
+  <!-- ============ 担当 ============ -->
+  <section class="panel" id="p-owner" aria-labelledby="t-owner" hidden>
+    <h1 class="sr" id="t-owner">担当者</h1>
+    <div class="card">
+      <div class="card-t">担当者ごとの持ち件数</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>担当</th><th>件数</th><th>放置</th><th>申込以降</th><th>アフター</th></tr></thead>
+          <tbody id="ownerBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-t">ステージ別の件数</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>区分 / ステージ</th><th>件数</th><th>放置</th></tr></thead>
+          <tbody id="stageBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 書き出し ============ -->
+  <section class="panel" id="p-out" aria-labelledby="t-out" hidden>
+    <h1 class="sr" id="t-out">書き出し</h1>
+
+    <div class="card">
+      <div class="card-t">Claude に相談する用のテキスト</div>
+      <p class="note" style="margin-bottom:12px;">
+        コピーして携帯の Claude に貼り付けてください。<br>
+        <b>このツールのデータは端末内だけ</b>にあるため、Claude からは直接読めません。この貼り付けが当面の受け渡し口です。
+      </p>
+      <button type="button" class="btn on-primary" id="btnCopyBrief">相談用テキストをコピー</button>
+      <div class="field" style="margin-top:12px;">
+        <label for="briefOut">中身</label>
+        <textarea id="briefOut" rows="12" readonly></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-t">バックアップ</div>
+      <p class="note" style="margin-bottom:12px;">
+        データは<b>この端末の中だけ</b>にあります。機種変更・ブラウザの履歴削除で<span class="bad">消えます</span>。
+        週に一度は書き出して、社内の安全な場所に保管してください。
+      </p>
+      <div class="btn-row">
+        <button type="button" class="btn btn-sub" id="btnExport">JSONをコピー</button>
+        <button type="button" class="btn btn-sub" id="btnCsv">CSVをコピー</button>
+      </div>
+      <div class="field" style="margin-top:12px;">
+        <label for="ioBox">書き出し／読み込み欄</label>
+        <textarea id="ioBox" rows="6" placeholder="以前書き出した JSON をここに貼って「読み込む」を押すと復元します"></textarea>
+      </div>
+      <button type="button" class="btn btn-sub" id="btnImport">貼り付けた JSON を読み込む</button>
+    </div>
+
+    <div class="card">
+      <div class="card-t">危険な操作</div>
+      <button type="button" class="btn btn-danger" id="btnWipe">すべてのデータを消す</button>
+    </div>
+  </section>
+
+</main>
+
+<nav class="tabbar" role="tablist" aria-label="画面切り替え">
+  <button class="tab" role="tab" id="tab-today" aria-controls="p-today" aria-selected="true">
+    <span class="tab-i" aria-hidden="true">●</span>今日
+    <span class="badge" id="badgeToday" hidden></span>
+  </button>
+  <button class="tab" role="tab" id="tab-cases" aria-controls="p-cases" aria-selected="false"><span class="tab-i" aria-hidden="true">▤</span>案件</button>
+  <button class="tab" role="tab" id="tab-after" aria-controls="p-after" aria-selected="false"><span class="tab-i" aria-hidden="true">♡</span>アフター</button>
+  <button class="tab" role="tab" id="tab-owner" aria-controls="p-owner" aria-selected="false"><span class="tab-i" aria-hidden="true">▮</span>担当</button>
+  <button class="tab" role="tab" id="tab-out"   aria-controls="p-out"   aria-selected="false"><span class="tab-i" aria-hidden="true">↑</span>書き出し</button>
+</nav>
+
+<!-- ============ 案件の追加・編集 ============ -->
+<dialog id="dlgCase" aria-labelledby="dlgCaseT">
+  <form method="dialog" id="formCase">
+    <div class="dlg-t">
+      <span id="dlgCaseT">案件を追加</span>
+      <button type="button" class="dlg-x" data-close="dlgCase" aria-label="閉じる">×</button>
+    </div>
+
+    <div class="field">
+      <label for="cName">お客様名・物件名 <span style="color:var(--c-accent)">*</span></label>
+      <input type="text" id="cName" placeholder="中町 A様 / 和光ビル用地" required>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="cKind">区分</label>
+        <select id="cKind"></select>
+      </div>
+      <div class="field">
+        <label for="cStage">ステージ</label>
+        <select id="cStage"></select>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="cOwner">担当</label>
+        <input type="text" id="cOwner" placeholder="山田" list="ownerSuggest">
+        <datalist id="ownerSuggest"></datalist>
+      </div>
+      <div class="field">
+        <label for="cLast">最終接触日</label>
+        <input type="date" id="cLast">
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="cNext">次にやること</label>
+      <input type="text" id="cNext" placeholder="査定書を持って訪問">
+    </div>
+
+    <div class="field">
+      <label for="cDue">その期限</label>
+      <input type="date" id="cDue">
+    </div>
+
+    <div class="field">
+      <label for="cMemo">メモ</label>
+      <textarea id="cMemo" placeholder="相続がらみ。司法書士の同席が必要"></textarea>
+    </div>
+
+    <button type="button" class="btn on-primary" id="btnSaveCase">保存</button>
+  </form>
+</dialog>
+
+<!-- ============ 引渡し済みの追加・編集 ============ -->
+<dialog id="dlgAfter" aria-labelledby="dlgAfterT">
+  <form method="dialog" id="formAfter">
+    <div class="dlg-t">
+      <span id="dlgAfterT">引渡し済みを追加</span>
+      <button type="button" class="dlg-x" data-close="dlgAfter" aria-label="閉じる">×</button>
+    </div>
+
+    <div class="field">
+      <label for="aName">お客様名 <span style="color:var(--c-accent)">*</span></label>
+      <input type="text" id="aName" placeholder="中町 A様" required>
+    </div>
+
+    <div class="field">
+      <label for="aProp">物件</label>
+      <input type="text" id="aProp" placeholder="広島市中区中町 新築戸建">
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="aOwner">担当</label>
+        <input type="text" id="aOwner" placeholder="山田" list="ownerSuggest">
+      </div>
+      <div class="field">
+        <label for="aHand">引渡し日 <span style="color:var(--c-accent)">*</span></label>
+        <input type="date" id="aHand" required>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="aMemo">メモ</label>
+      <textarea id="aMemo" placeholder="ニュースレターは奥様宛。ご長男が来春入学"></textarea>
+    </div>
+
+    <button type="button" class="btn on-primary" id="btnSaveAfter">保存</button>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ============================================================
+     定義
+     ============================================================ */
+
+  /* 区分ごとのステージ。不動産の実務の流れに合わせている */
+  var KINDS = {
+    sell:   { label:'売却',  stages:['反響','追客中','査定','媒介','販売中','申込','契約','引渡し'] },
+    buy:    { label:'購入',  stages:['反響','追客中','案内済','申込','契約','引渡し'] },
+    rent:   { label:'賃貸',  stages:['反響','追客中','内見済','申込','契約','入居'] },
+    shiire: { label:'仕入れ',stages:['情報入手','査定','交渉','契約','決済','分譲準備','販売中','完売'] }
+  };
+  var KIND_KEYS = ['sell','buy','rent','shiire'];
+
+  /* 何日間接触が無ければ「放置」とみなすか。0 は完了ステージ＝監視しない。
+     ここの数字を変えればアラートの厳しさが変わる */
+  var STALE = {
+    '反響':2, '追客中':7, '案内済':5, '内見済':5, '申込':3,
+    '査定':5, '媒介':7, '販売中':14,
+    '情報入手':3, '交渉':5, '契約':7, '決済':7, '分譲準備':14,
+    '引渡し':0, '入居':0, '完売':0
+  };
+
+  /* 引渡し日からの逆算。同社は最長5年保証 */
+  var MILESTONES = [
+    { label:'3ヶ月点検', m:3  },
+    { label:'6ヶ月点検', m:6  },
+    { label:'1年点検',   m:12 },
+    { label:'2年点検',   m:24 },
+    { label:'3年点検',   m:36 },
+    { label:'5年点検',   m:60 }
+  ];
+  var WARRANTY_MONTHS = 60;
+
+  /* ============================================================
+     データ
+     ============================================================ */
+  var KEY = 'istyle-ops-v2';
+  var db = { v:2, cases:[], after:[] };
+
+  function load(){
+    try{
+      var raw = localStorage.getItem(KEY);
+      if(!raw) return;
+      var p = JSON.parse(raw);
+      if(p && typeof p === 'object'){
+        db.cases = Array.isArray(p.cases) ? p.cases : [];
+        db.after = Array.isArray(p.after) ? p.after : [];
+      }
+    }catch(e){
+      /* 壊れた保存データで画面ごと落ちないよう、初期状態のまま続行する */
+      console.warn('保存データを読めませんでした', e);
+    }
+  }
+
+  function save(){
+    try{
+      localStorage.setItem(KEY, JSON.stringify(db));
+      return true;
+    }catch(e){
+      toast('保存できませんでした（容量不足かも）');
+      return false;
+    }
+  }
+
+  /* ============================================================
+     小道具
+     ============================================================ */
+  var $ = function(id){ return document.getElementById(id); };
+
+  function pad(n){ return n < 10 ? '0' + n : '' + n; }
+  function iso(d){ return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
+  function today(){ return iso(new Date()); }
+
+  /* "2026-11-13" を、タイムゾーンでずれないローカル日付として読む。
+     new Date("2026-11-13") は UTC 扱いになり日付が前日になりうる */
+  function parseISO(s){
+    if(!s) return null;
+    var p = String(s).split('-');
+    if(p.length !== 3) return null;
+    var d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  /* 月を足す。1/31 の3ヶ月後を 4/31 にせず、その月の末日に丸める */
+  function addMonths(d, n){
+    var day = d.getDate();
+    var t = new Date(d.getFullYear(), d.getMonth() + n, 1);
+    var last = new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate();
+    t.setDate(Math.min(day, last));
+    return t;
+  }
+
+  function daysBetween(fromISO, toISO){
+    var a = parseISO(fromISO), b = parseISO(toISO);
+    if(!a || !b) return null;
+    return Math.round((b - a) / 86400000);
+  }
+
+  function md(d){ return (d.getMonth()+1) + '/' + d.getDate(); }
+  function ymd(d){ return d.getFullYear() + '/' + (d.getMonth()+1) + '/' + d.getDate(); }
+
+  function esc(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+    });
+  }
+
+  function uid(p){ return p + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+  var toastTimer = null;
+  function toast(msg){
+    var t = $('toast');
+    t.textContent = msg;
+    t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.hidden = true; }, 2200);
+  }
+
+  function copy(text, okMsg){
+    /* iOS Safari は navigator.clipboard が使えない場面があるので、選択方式に落とす */
+    function fallback(){
+      var box = $('ioBox');
+      box.value = text;
+      box.focus();
+      box.setSelectionRange(0, box.value.length);
+      try{
+        if(document.execCommand('copy')){ toast(okMsg); return; }
+      }catch(e){ /* 下の案内に落ちる */ }
+      toast('下の欄に出しました。長押しでコピーしてください');
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ toast(okMsg); }, fallback);
+    }else{
+      fallback();
+    }
+  }
+
+  /* ============================================================
+     判定ロジック（この仕組みの核）
+     ============================================================ */
+
+  /* 案件が何日放置されているか。監視対象外なら null */
+  function staleInfo(c){
+    var limit = STALE[c.stage];
+    if(!limit) return null;              /* 0 または未知のステージは監視しない */
+    if(!c.lastTouch) return { days:null, over:true, limit:limit };
+    var d = daysBetween(c.lastTouch, today());
+    if(d === null) return null;
+    return { days:d, over:d >= limit, limit:limit };
+  }
+
+  /* 次アクションの期限が来ているか */
+  function dueInfo(c){
+    if(!c.next || !c.nextDue) return null;
+    var d = daysBetween(today(), c.nextDue);
+    if(d === null) return null;
+    return { days:d, over:d <= 0 };
+  }
+
+  /* 引渡し日から、点検・保証・記念日を全部算出する */
+  function afterSchedule(a){
+    var h = parseISO(a.handover);
+    if(!h) return null;
+
+    var now = new Date();
+    var out = { handover:h, items:[], thisMonth:[] };
+
+    MILESTONES.forEach(function(ms){
+      var d = addMonths(h, ms.m);
+      out.items.push({ label:ms.label, date:d });
+    });
+
+    var warranty = addMonths(h, WARRANTY_MONTHS);
+    out.warranty = warranty;
+    out.items.push({ label:'保証満了', date:warranty, warn:true });
+
+    /* 引渡し記念日：今年の同月同日（過ぎていれば来年） */
+    var annivThisYear = new Date(now.getFullYear(), h.getMonth(), h.getDate());
+    var years = now.getFullYear() - h.getFullYear();
+    if(years >= 1){
+      out.anniv = annivThisYear;
+      out.annivYears = years;
+    }
+
+    /* 今月に該当するものを拾う */
+    var ym = now.getFullYear() + '-' + pad(now.getMonth()+1);
+    out.items.forEach(function(it){
+      if(iso(it.date).slice(0,7) === ym) out.thisMonth.push(it);
+    });
+    if(out.anniv && iso(out.anniv).slice(0,7) === ym && years >= 1){
+      out.thisMonth.push({ label:'引渡し' + years + '周年', date:out.anniv, anniv:true });
+    }
+
+    return out;
+  }
+
+  function ownerOf(x){ return (x.owner && x.owner.trim()) ? x.owner.trim() : '未設定'; }
+
+  /* ============================================================
+     今日タブ
+     ============================================================ */
+  function renderToday(){
+    var stales = [], dues = [], afters = [];
+
+    db.cases.forEach(function(c){
+      var s = staleInfo(c);
+      if(s && s.over) stales.push({ c:c, s:s });
+      var d = dueInfo(c);
+      if(d && d.over) dues.push({ c:c, d:d });
+    });
+
+    /* 放置が長い順。最終接触日が未入力のものを先頭に置く */
+    stales.sort(function(a, b){
+      if(a.s.days === null) return -1;
+      if(b.s.days === null) return 1;
+      return b.s.days - a.s.days;
+    });
+    dues.sort(function(a, b){ return a.d.days - b.d.days; });
+
+    db.after.forEach(function(a){
+      var sc = afterSchedule(a);
+      if(sc && sc.thisMonth.length) afters.push({ a:a, sc:sc });
+    });
+    afters.sort(function(x, y){ return x.sc.thisMonth[0].date - y.sc.thisMonth[0].date; });
+
+    var active = db.cases.filter(function(c){ return STALE[c.stage]; }).length;
+
+    $('todayKpis').innerHTML =
+      kpi('放置している案件', stales.length, stales.length ? 'bad' : 'good',
+          '追客中 ' + active + '件のうち') +
+      kpi('期限が来た行動', dues.length, dues.length ? 'warn' : 'good', '次アクションの期限') +
+      kpi('今月のアフター', afters.length, afters.length ? 'hl' : '',
+          '引渡し済み ' + db.after.length + '件') +
+      kpi('担当者数', countOwners(), '', '案件を持っている人');
+
+    var html = '';
+
+    html += section('放置している案件', stales.length, stales.length ? 'alarm' : '',
+      stales.length
+        ? stales.map(function(x){ return caseRow(x.c, true); }).join('')
+        : '<div class="ok-msg">放置ゼロ。全件に接触できています</div>');
+
+    html += section('期限が来た行動', dues.length, '',
+      dues.length
+        ? dues.map(function(x){ return caseRow(x.c, true); }).join('')
+        : '<div class="empty">期限超過なし</div>');
+
+    html += section('今月のアフターフォロー', afters.length, '',
+      afters.length
+        ? afters.map(function(x){ return afterRow(x.a, true); }).join('')
+        : '<div class="empty">今月の該当なし</div>');
+
+    $('todaySections').innerHTML = html;
+
+    var badge = $('badgeToday');
+    var n = stales.length + dues.length;
+    badge.textContent = n > 99 ? '99+' : n;
+    badge.hidden = n === 0;
+  }
+
+  function kpi(label, value, cls, sub){
+    return '<div class="kpi">' +
+             '<div class="kpi-l">' + label + '</div>' +
+             '<div class="kpi-v ' + cls + '">' + value + '</div>' +
+             '<div class="kpi-s">' + sub + '</div>' +
+           '</div>';
+  }
+
+  function section(title, count, cls, inner){
+    return '<div class="card ' + cls + '" style="margin-bottom:16px;">' +
+             '<div class="card-t"><span>' + title + '</span><span class="n">' + count + '</span></div>' +
+             '<div class="list">' + inner + '</div>' +
+           '</div>';
+  }
+
+  function countOwners(){
+    var set = {};
+    db.cases.forEach(function(c){ set[ownerOf(c)] = 1; });
+    return Object.keys(set).length;
+  }
+
+  /* ============================================================
+     案件タブ
+     ============================================================ */
+  var caseFilter = 'all';
+
+  function renderCaseFilter(){
+    var counts = { all: db.cases.length };
+    KIND_KEYS.forEach(function(k){ counts[k] = 0; });
+    db.cases.forEach(function(c){ if(counts[c.kind] !== undefined) counts[c.kind]++; });
+
+    var items = [{ k:'all', label:'すべて' }].concat(KIND_KEYS.map(function(k){
+      return { k:k, label:KINDS[k].label };
+    }));
+
+    $('caseFilter').innerHTML = items.map(function(it){
+      return '<button type="button" class="chip" data-filter="' + it.k + '" ' +
+             'aria-pressed="' + (caseFilter === it.k ? 'true' : 'false') + '">' +
+             it.label + ' ' + (counts[it.k] || 0) + '</button>';
+    }).join('');
+  }
+
+  function renderCases(){
+    renderCaseFilter();
+
+    var list = db.cases.filter(function(c){
+      return caseFilter === 'all' || c.kind === caseFilter;
+    });
+
+    /* 放置が長い順 → 未完了を上に */
+    list.sort(function(a, b){
+      var sa = staleInfo(a), sb = staleInfo(b);
+      var oa = sa && sa.over ? 1 : 0, ob = sb && sb.over ? 1 : 0;
+      if(oa !== ob) return ob - oa;
+      var da = sa && sa.days !== null ? sa.days : 9999;
+      var dbb = sb && sb.days !== null ? sb.days : 9999;
+      return dbb - da;
+    });
+
+    $('caseList').innerHTML = list.length
+      ? list.map(function(c){ return caseRow(c, false); }).join('')
+      : '<li class="empty">案件がありません。上の「＋ 案件を追加」から登録してください</li>';
+  }
+
+  function caseRow(c, compact){
+    var s = staleInfo(c);
+    var d = dueInfo(c);
+    var kind = KINDS[c.kind];
+    var cls = '';
+    if(s && s.over) cls = 'bad';
+    else if(d && d.over) cls = 'warn';
+
+    var meta = [];
+    meta.push((kind ? kind.label : '—') + ' / ' + esc(c.stage || '—'));
+    meta.push('担当 ' + esc(ownerOf(c)));
+
+    if(s){
+      if(s.days === null){
+        meta.push('<span class="bad">最終接触日が未入力</span>');
+      }else if(s.over){
+        meta.push('<span class="bad">' + s.days + '日 放置（目安' + s.limit + '日）</span>');
+      }else{
+        meta.push('接触から' + s.days + '日');
+      }
+    }else if(c.lastTouch){
+      meta.push('最終接触 ' + c.lastTouch.slice(5).replace('-','/'));
+    }
+
+    var next = '';
+    if(c.next){
+      var dueTxt = '';
+      if(d){
+        dueTxt = d.over
+          ? ' <span class="bad">（期限 ' + c.nextDue.slice(5).replace('-','/') + ' 超過）</span>'
+          : ' <span class="row-meta" style="display:inline">（' + c.nextDue.slice(5).replace('-','/') + ' まで）</span>';
+      }
+      next = '<div class="row-next">▶ ' + esc(c.next) + dueTxt + '</div>';
+    }
+
+    var memo = (!compact && c.memo)
+      ? '<div class="row-meta">' + esc(c.memo) + '</div>'
+      : '';
+
+    var acts =
+      '<div class="row-acts">' +
+        '<button type="button" class="act touch" data-touch="' + c.id + '">今日 接触</button>' +
+        '<button type="button" class="act" data-advance="' + c.id + '">次の段階 ▶</button>' +
+        '<button type="button" class="act del" data-delcase="' + c.id + '" aria-label="削除">×</button>' +
+      '</div>';
+
+    return '<li class="row ' + cls + '">' +
+             '<div class="row-top">' +
+               '<button type="button" class="row-name" data-editcase="' + c.id + '">' + esc(c.name) + '</button>' +
+               '<span class="tag ' + (cls ? '' : 'on') + '">' + esc(c.stage || '—') + '</span>' +
+             '</div>' +
+             '<div class="row-meta">' + meta.join(' ・ ') + '</div>' +
+             next + memo + acts +
+           '</li>';
+  }
+
+  /* ============================================================
+     アフタータブ
+     ============================================================ */
+  function renderAfter(){
+    var list = db.after.slice();
+
+    /* 今月該当を上に、次に引渡しが新しい順 */
+    list.sort(function(a, b){
+      var sa = afterSchedule(a), sb = afterSchedule(b);
+      var ta = sa && sa.thisMonth.length ? 1 : 0;
+      var tb = sb && sb.thisMonth.length ? 1 : 0;
+      if(ta !== tb) return tb - ta;
+      return (b.handover || '').localeCompare(a.handover || '');
+    });
+
+    $('afterList').innerHTML = list.length
+      ? list.map(function(a){ return afterRow(a, false); }).join('')
+      : '<li class="empty">引渡し済みの登録がありません</li>';
+  }
+
+  function afterRow(a, compact){
+    var sc = afterSchedule(a);
+    if(!sc){
+      return '<li class="row bad">' +
+        '<div class="row-top">' +
+          '<button type="button" class="row-name" data-editafter="' + a.id + '">' + esc(a.name) + '</button>' +
+        '</div>' +
+        '<div class="row-meta"><span class="bad">引渡し日が未入力です</span></div>' +
+      '</li>';
+    }
+
+    var hot = sc.thisMonth.length > 0;
+    var meta = [];
+    if(a.property) meta.push(esc(a.property));
+    meta.push('担当 ' + esc(ownerOf(a)));
+    meta.push('引渡し ' + ymd(sc.handover));
+
+    /* 保証満了が3ヶ月以内なら警告する */
+    var toWarranty = daysBetween(today(), iso(sc.warranty));
+    var warrantyTxt;
+    if(toWarranty === null){
+      warrantyTxt = '';
+    }else if(toWarranty < 0){
+      warrantyTxt = '<span class="row-meta">保証終了（' + ymd(sc.warranty) + '）</span>';
+    }else if(toWarranty <= 90){
+      warrantyTxt = '<div class="row-meta"><span class="warn">保証満了まで' + toWarranty + '日（' + ymd(sc.warranty) + '）</span></div>';
+    }else{
+      warrantyTxt = '<div class="row-meta">保証満了 ' + ymd(sc.warranty) + '</div>';
+    }
+
+    var thisMonth = hot
+      ? '<div class="row-next">' +
+          sc.thisMonth.map(function(it){
+            return '<b style="color:var(--c-primary)">' + esc(it.label) + '</b> ' + md(it.date);
+          }).join(' ／ ') +
+        '</div>'
+      : '';
+
+    /* 一覧では次に来る予定を1つだけ見せる。全部出すと縦に伸びすぎる */
+    var upcoming = '';
+    if(!compact && !hot){
+      var t0 = today();
+      var nextItem = null;
+      sc.items.forEach(function(it){
+        if(iso(it.date) >= t0 && (!nextItem || it.date < nextItem.date)) nextItem = it;
+      });
+      if(nextItem){
+        var left = daysBetween(t0, iso(nextItem.date));
+        upcoming = '<div class="row-meta">次は ' + esc(nextItem.label) + '（' + ymd(nextItem.date) + ' / あと' + left + '日）</div>';
+      }
+    }
+
+    var memo = (!compact && a.memo) ? '<div class="row-meta">' + esc(a.memo) + '</div>' : '';
+
+    var acts = compact ? '' :
+      '<div class="row-acts">' +
+        '<button type="button" class="act" data-editafter="' + a.id + '">編集</button>' +
+        '<button type="button" class="act del" data-delafter="' + a.id + '" aria-label="削除">×</button>' +
+      '</div>';
+
+    return '<li class="row ' + (hot ? 'warn' : '') + '">' +
+             '<div class="row-top">' +
+               '<button type="button" class="row-name" data-editafter="' + a.id + '">' + esc(a.name) + '</button>' +
+               (sc.annivYears ? '<span class="tag">' + sc.annivYears + '年目</span>' : '') +
+             '</div>' +
+             '<div class="row-meta">' + meta.join(' ・ ') + '</div>' +
+             thisMonth + upcoming + warrantyTxt + memo + acts +
+           '</li>';
+  }
+
+  /* ============================================================
+     担当タブ
+     ============================================================ */
+  function renderOwners(){
+    var map = {};
+
+    function slot(name){
+      if(!map[name]) map[name] = { total:0, stale:0, late:0, after:0 };
+      return map[name];
+    }
+
+    db.cases.forEach(function(c){
+      var o = slot(ownerOf(c));
+      o.total++;
+      var s = staleInfo(c);
+      if(s && s.over) o.stale++;
+      /* 申込以降＝受注が見えている段階 */
+      var kind = KINDS[c.kind];
+      if(kind){
+        var i = kind.stages.indexOf(c.stage);
+        var j = kind.stages.indexOf('申込');
+        if(j >= 0 && i >= j) o.late++;
+        else if(j < 0 && i >= kind.stages.indexOf('契約') && i >= 0) o.late++;
+      }
+    });
+
+    db.after.forEach(function(a){ slot(ownerOf(a)).after++; });
+
+    var names = Object.keys(map).sort(function(a, b){ return map[b].total - map[a].total; });
+
+    $('ownerBody').innerHTML = names.length
+      ? names.map(function(n){
+          var o = map[n];
+          return '<tr>' +
+            '<td>' + esc(n) + '</td>' +
+            '<td>' + o.total + '</td>' +
+            '<td class="' + (o.stale ? 'bad' : '') + '">' + o.stale + '</td>' +
+            '<td class="' + (o.late ? 'good' : '') + '">' + o.late + '</td>' +
+            '<td>' + o.after + '</td>' +
+          '</tr>';
+        }).join('')
+      : '<tr><td colspan="5" style="text-align:center;color:var(--text-2)">登録なし</td></tr>';
+
+    /* ステージ別 */
+    var rows = [];
+    KIND_KEYS.forEach(function(k){
+      var kind = KINDS[k];
+      kind.stages.forEach(function(st){
+        var items = db.cases.filter(function(c){ return c.kind === k && c.stage === st; });
+        if(!items.length) return;
+        var stale = items.filter(function(c){ var s = staleInfo(c); return s && s.over; }).length;
+        rows.push('<tr>' +
+          '<td>' + kind.label + ' / ' + esc(st) + '</td>' +
+          '<td>' + items.length + '</td>' +
+          '<td class="' + (stale ? 'bad' : '') + '">' + stale + '</td>' +
+        '</tr>');
+      });
+    });
+
+    $('stageBody').innerHTML = rows.length
+      ? rows.join('')
+      : '<tr><td colspan="3" style="text-align:center;color:var(--text-2)">登録なし</td></tr>';
+  }
+
+  /* 担当名の入力補助 */
+  function renderOwnerSuggest(){
+    var set = {};
+    db.cases.forEach(function(c){ if(c.owner) set[c.owner.trim()] = 1; });
+    db.after.forEach(function(a){ if(a.owner) set[a.owner.trim()] = 1; });
+    $('ownerSuggest').innerHTML = Object.keys(set).map(function(n){
+      return '<option value="' + esc(n) + '"></option>';
+    }).join('');
+  }
+
+  /* ============================================================
+     案件ダイアログ
+     ============================================================ */
+  var editingCase = null;
+
+  function fillKindSelect(){
+    $('cKind').innerHTML = KIND_KEYS.map(function(k){
+      return '<option value="' + k + '">' + KINDS[k].label + '</option>';
+    }).join('');
+  }
+
+  function fillStageSelect(kind, selected){
+    var stages = (KINDS[kind] || KINDS.sell).stages;
+    $('cStage').innerHTML = stages.map(function(s){
+      return '<option value="' + esc(s) + '"' + (s === selected ? ' selected' : '') + '>' + esc(s) + '</option>';
+    }).join('');
+  }
+
+  function openCase(id){
+    editingCase = id || null;
+    var c = id ? db.cases.filter(function(x){ return x.id === id; })[0] : null;
+
+    $('dlgCaseT').textContent = c ? '案件を編集' : '案件を追加';
+    $('cName').value  = c ? c.name  : '';
+    $('cKind').value  = c ? c.kind  : 'sell';
+    fillStageSelect($('cKind').value, c ? c.stage : null);
+    $('cOwner').value = c ? (c.owner || '') : '';
+    $('cLast').value  = c ? (c.lastTouch || '') : today();
+    $('cNext').value  = c ? (c.next || '') : '';
+    $('cDue').value   = c ? (c.nextDue || '') : '';
+    $('cMemo').value  = c ? (c.memo || '') : '';
+
+    $('dlgCase').showModal();
+  }
+
+  function saveCase(){
+    var name = $('cName').value.trim();
+    if(!name){ toast('お客様名・物件名を入れてください'); $('cName').focus(); return; }
+
+    var rec = {
+      name:      name,
+      kind:      $('cKind').value,
+      stage:     $('cStage').value,
+      owner:     $('cOwner').value.trim(),
+      lastTouch: $('cLast').value,
+      next:      $('cNext').value.trim(),
+      nextDue:   $('cDue').value,
+      memo:      $('cMemo').value.trim()
+    };
+
+    if(editingCase){
+      db.cases.forEach(function(c, i){
+        if(c.id === editingCase){
+          rec.id = c.id;
+          rec.created = c.created;
+          db.cases[i] = rec;
+        }
+      });
+    }else{
+      rec.id = uid('c');
+      rec.created = today();
+      db.cases.push(rec);
+    }
+
+    if(save()) toast(editingCase ? '更新しました' : '追加しました');
+    $('dlgCase').close();
+    renderAll();
+  }
+
+  /* ============================================================
+     アフターダイアログ
+     ============================================================ */
+  var editingAfter = null;
+
+  function openAfter(id){
+    editingAfter = id || null;
+    var a = id ? db.after.filter(function(x){ return x.id === id; })[0] : null;
+
+    $('dlgAfterT').textContent = a ? '引渡し済みを編集' : '引渡し済みを追加';
+    $('aName').value  = a ? a.name : '';
+    $('aProp').value  = a ? (a.property || '') : '';
+    $('aOwner').value = a ? (a.owner || '') : '';
+    $('aHand').value  = a ? (a.handover || '') : '';
+    $('aMemo').value  = a ? (a.memo || '') : '';
+
+    $('dlgAfter').showModal();
+  }
+
+  function saveAfter(){
+    var name = $('aName').value.trim();
+    if(!name){ toast('お客様名を入れてください'); $('aName').focus(); return; }
+    var hand = $('aHand').value;
+    if(!hand){ toast('引渡し日を入れてください。ここから全部を逆算します'); $('aHand').focus(); return; }
+
+    var rec = {
+      name:     name,
+      property: $('aProp').value.trim(),
+      owner:    $('aOwner').value.trim(),
+      handover: hand,
+      memo:     $('aMemo').value.trim()
+    };
+
+    if(editingAfter){
+      db.after.forEach(function(a, i){
+        if(a.id === editingAfter){
+          rec.id = a.id;
+          db.after[i] = rec;
+        }
+      });
+    }else{
+      rec.id = uid('a');
+      db.after.push(rec);
+    }
+
+    if(save()) toast(editingAfter ? '更新しました' : '追加しました');
+    $('dlgAfter').close();
+    renderAll();
+  }
+
+  /* ============================================================
+     イベント（委譲でまとめて受ける）
+     ============================================================ */
+  document.addEventListener('click', function(e){
+    var el = e.target.closest ? e.target.closest('[data-touch],[data-advance],[data-delcase],[data-editcase],[data-editafter],[data-delafter],[data-filter],[data-close]') : null;
+    if(!el) return;
+
+    var v;
+
+    /* 「今日 接触」1タップで最終接触日を今日にする。これが毎日の主操作 */
+    if((v = el.getAttribute('data-touch'))){
+      db.cases.forEach(function(c){ if(c.id === v) c.lastTouch = today(); });
+      if(save()) toast('接触を記録しました');
+      renderAll();
+      return;
+    }
+
+    /* ステージを1つ進める */
+    if((v = el.getAttribute('data-advance'))){
+      db.cases.forEach(function(c){
+        if(c.id !== v) return;
+        var stages = (KINDS[c.kind] || KINDS.sell).stages;
+        var i = stages.indexOf(c.stage);
+        if(i < 0){ c.stage = stages[0]; }
+        else if(i < stages.length - 1){ c.stage = stages[i+1]; }
+        else { toast('最終段階です'); return; }
+        c.lastTouch = today();
+        toast(c.name + ' → ' + c.stage);
+      });
+      save();
+      renderAll();
+      return;
+    }
+
+    if((v = el.getAttribute('data-editcase'))){ openCase(v); return; }
+    if((v = el.getAttribute('data-editafter'))){ openAfter(v); return; }
+
+    if((v = el.getAttribute('data-delcase'))){
+      var c0 = db.cases.filter(function(x){ return x.id === v; })[0];
+      if(!c0) return;
+      if(!confirm('「' + c0.name + '」を削除します。よろしいですか？')) return;
+      db.cases = db.cases.filter(function(x){ return x.id !== v; });
+      save();
+      toast('削除しました');
+      renderAll();
+      return;
+    }
+
+    if((v = el.getAttribute('data-delafter'))){
+      var a0 = db.after.filter(function(x){ return x.id === v; })[0];
+      if(!a0) return;
+      if(!confirm('「' + a0.name + '」を削除します。よろしいですか？')) return;
+      db.after = db.after.filter(function(x){ return x.id !== v; });
+      save();
+      toast('削除しました');
+      renderAll();
+      return;
+    }
+
+    if((v = el.getAttribute('data-filter'))){
+      caseFilter = v;
+      renderCases();
+      return;
+    }
+
+    if((v = el.getAttribute('data-close'))){
+      $(v).close();
+      return;
+    }
+  });
+
+  /* 区分を変えたらステージの選択肢も入れ替える */
+  $('cKind').addEventListener('change', function(){
+    fillStageSelect($('cKind').value, null);
+  });
+
+  $('btnSaveCase').addEventListener('click', saveCase);
+  $('btnSaveAfter').addEventListener('click', saveAfter);
+  $('btnNewCase').addEventListener('click', function(){ openCase(null); });
+  $('btnNewAfter').addEventListener('click', function(){ openAfter(null); });
+
+  /* ============================================================
+     書き出し
+     ============================================================ */
+  function buildBrief(){
+    var L = [];
+    var now = new Date();
+
+    L.push('【アイスタイル 社長ダッシュボード ' + iso(now) + ' 時点】');
+    L.push('');
+
+    /* 放置案件 */
+    var stales = [];
+    db.cases.forEach(function(c){
+      var s = staleInfo(c);
+      if(s && s.over) stales.push({ c:c, s:s });
+    });
+    stales.sort(function(a, b){
+      if(a.s.days === null) return -1;
+      if(b.s.days === null) return 1;
+      return b.s.days - a.s.days;
+    });
+
+    L.push('■ 放置している案件（' + stales.length + '件 / 追客中 ' +
+           db.cases.filter(function(c){ return STALE[c.stage]; }).length + '件中）');
+    if(stales.length){
+      stales.forEach(function(x){
+        var kind = KINDS[x.c.kind];
+        L.push('・' + x.c.name + '｜' + (kind ? kind.label : '—') + ' ' + x.c.stage +
+               '｜担当 ' + ownerOf(x.c) +
+               '｜' + (x.s.days === null ? '最終接触日が未入力' : x.s.days + '日放置（目安' + x.s.limit + '日）') +
+               (x.c.next ? '｜次: ' + x.c.next : ''));
+      });
+    }else{
+      L.push('なし');
+    }
+
+    /* 期限超過 */
+    var dues = [];
+    db.cases.forEach(function(c){
+      var d = dueInfo(c);
+      if(d && d.over) dues.push({ c:c, d:d });
+    });
+    L.push('');
+    L.push('■ 期限が来た行動（' + dues.length + '件）');
+    if(dues.length){
+      dues.forEach(function(x){
+        L.push('・' + x.c.name + '｜' + x.c.next + '｜期限 ' + x.c.nextDue +
+               '（' + (x.d.days === 0 ? '本日' : Math.abs(x.d.days) + '日超過') + '）｜担当 ' + ownerOf(x.c));
+      });
+    }else{
+      L.push('なし');
+    }
+
+    /* 今月のアフター */
+    var afters = [];
+    db.after.forEach(function(a){
+      var sc = afterSchedule(a);
+      if(sc && sc.thisMonth.length) afters.push({ a:a, sc:sc });
+    });
+    L.push('');
+    L.push('■ 今月のアフターフォロー対象（' + afters.length + '件 / 引渡し済み ' + db.after.length + '件）');
+    if(afters.length){
+      afters.forEach(function(x){
+        L.push('・' + x.a.name + (x.a.property ? '（' + x.a.property + '）' : '') +
+               '｜' + x.sc.thisMonth.map(function(it){ return it.label + ' ' + md(it.date); }).join(' / ') +
+               '｜担当 ' + ownerOf(x.a));
+      });
+    }else{
+      L.push('なし');
+    }
+
+    /* 保証満了が近い */
+    var soon = [];
+    db.after.forEach(function(a){
+      var sc = afterSchedule(a);
+      if(!sc) return;
+      var left = daysBetween(today(), iso(sc.warranty));
+      if(left !== null && left >= 0 && left <= 90) soon.push({ a:a, left:left, d:sc.warranty });
+    });
+    if(soon.length){
+      soon.sort(function(x, y){ return x.left - y.left; });
+      L.push('');
+      L.push('■ 保証満了が近い（3ヶ月以内 / ' + soon.length + '件）');
+      soon.forEach(function(x){
+        L.push('・' + x.a.name + '｜' + ymd(x.d) + '（あと' + x.left + '日）');
+      });
+    }
+
+    /* 担当別 */
+    var map = {};
+    db.cases.forEach(function(c){
+      var n = ownerOf(c);
+      if(!map[n]) map[n] = { total:0, stale:0 };
+      map[n].total++;
+      var s = staleInfo(c);
+      if(s && s.over) map[n].stale++;
+    });
+    var names = Object.keys(map).sort(function(a, b){ return map[b].total - map[a].total; });
+    if(names.length){
+      L.push('');
+      L.push('■ 担当者ごとの持ち件数');
+      names.forEach(function(n){
+        L.push('・' + n + '：' + map[n].total + '件（うち放置 ' + map[n].stale + '件）');
+      });
+    }
+
+    /* ステージ別 */
+    var stageRows = [];
+    KIND_KEYS.forEach(function(k){
+      KINDS[k].stages.forEach(function(st){
+        var n = db.cases.filter(function(c){ return c.kind === k && c.stage === st; }).length;
+        if(n) stageRows.push(KINDS[k].label + ' ' + st + ' ' + n + '件');
+      });
+    });
+    if(stageRows.length){
+      L.push('');
+      L.push('■ ステージ別');
+      L.push(stageRows.join(' / '));
+    }
+
+    L.push('');
+    L.push('この状況を見て、今週どこから手を付けるべきか、優先順位をつけて教えてください。');
+    return L.join('\n');
+  }
+
+  function buildCsv(){
+    var out = [];
+
+    out.push('# 案件');
+    out.push('名前,区分,ステージ,担当,最終接触日,放置日数,次にやること,期限,メモ');
+    db.cases.forEach(function(c){
+      var s = staleInfo(c);
+      var kind = KINDS[c.kind];
+      out.push([
+        q(c.name), q(kind ? kind.label : ''), q(c.stage), q(ownerOf(c)),
+        c.lastTouch || '', (s && s.days !== null ? s.days : ''),
+        q(c.next || ''), c.nextDue || '', q(c.memo || '')
+      ].join(','));
+    });
+
+    out.push('');
+    out.push('# 引渡し済み（アフターフォロー）');
+    out.push('名前,物件,担当,引渡し日,保証満了,次の予定,メモ');
+    db.after.forEach(function(a){
+      var sc = afterSchedule(a);
+      var nextItem = null;
+      if(sc){
+        var t0 = today();
+        sc.items.forEach(function(it){
+          if(iso(it.date) >= t0 && (!nextItem || it.date < nextItem.date)) nextItem = it;
+        });
+      }
+      out.push([
+        q(a.name), q(a.property || ''), q(ownerOf(a)), a.handover || '',
+        sc ? iso(sc.warranty) : '',
+        nextItem ? q(nextItem.label + ' ' + iso(nextItem.date)) : '',
+        q(a.memo || '')
+      ].join(','));
+    });
+
+    return out.join('\n');
+  }
+
+  /* CSV のセルを壊さないよう、" と改行を処理する */
+  function q(s){
+    return '"' + String(s == null ? '' : s).replace(/"/g, '""').replace(/\r?\n/g, ' ') + '"';
+  }
+
+  function importJson(){
+    var raw = $('ioBox').value.trim();
+    if(!raw){ toast('欄に JSON を貼ってください'); return; }
+
+    var p;
+    try{
+      p = JSON.parse(raw);
+    }catch(e){
+      toast('JSON として読めませんでした');
+      return;
+    }
+    if(!p || typeof p !== 'object' || (!p.cases && !p.after)){
+      toast('このダッシュボードのデータではないようです');
+      return;
+    }
+    if(!confirm('今のデータを、貼り付けた内容で置き換えます。よろしいですか？')) return;
+
+    db.cases = Array.isArray(p.cases) ? p.cases : [];
+    db.after = Array.isArray(p.after) ? p.after : [];
+    if(save()) toast('読み込みました');
+    renderAll();
+  }
+
+  function wipe(){
+    if(!confirm('すべての案件とアフターフォロー記録を消します。元に戻せません。よろしいですか？')) return;
+    if(!confirm('本当に消しますか？　先に「JSONをコピー」でバックアップを取ることを強くおすすめします。')) return;
+    db.cases = [];
+    db.after = [];
+    save();
+    renderAll();
+    toast('消しました');
+  }
+
+  $('btnCopyBrief').addEventListener('click', function(){
+    var text = buildBrief();
+    $('briefOut').value = text;
+    copy(text, 'コピーしました。Claude に貼り付けてください');
+  });
+  $('btnExport').addEventListener('click', function(){ copy(JSON.stringify(db), 'JSONをコピーしました'); });
+  $('btnCsv').addEventListener('click', function(){ copy(buildCsv(), 'CSVをコピーしました'); });
+  $('btnImport').addEventListener('click', importJson);
+  $('btnWipe').addEventListener('click', wipe);
+
+  /* ============================================================
+     タブ
+     ============================================================ */
+  var TABS = [
+    { tab:'tab-today', panel:'p-today' },
+    { tab:'tab-cases', panel:'p-cases' },
+    { tab:'tab-after', panel:'p-after' },
+    { tab:'tab-owner', panel:'p-owner' },
+    { tab:'tab-out',   panel:'p-out'   }
+  ];
+
+  function show(panelId){
+    TABS.forEach(function(t){
+      var on = t.panel === panelId;
+      $(t.tab).setAttribute('aria-selected', on ? 'true' : 'false');
+      $(t.panel).hidden = !on;
+    });
+    window.scrollTo(0, 0);
+    if(panelId === 'p-out') $('briefOut').value = buildBrief();
+  }
+
+  TABS.forEach(function(t){
+    $(t.tab).addEventListener('click', function(){ show(t.panel); });
+  });
+
+  /* ============================================================
+     起動
+     ============================================================ */
+  function renderAll(){
+    renderToday();
+    renderCases();
+    renderAfter();
+    renderOwners();
+    renderOwnerSuggest();
+  }
+
+  load();
+  fillKindSelect();
+  fillStageSelect('sell', null);
+
+  $('hdDate').textContent = (function(){
+    var d = new Date();
+    var w = ['日','月','火','水','木','金','土'][d.getDay()];
+    return (d.getMonth()+1) + '/' + d.getDate() + ' (' + w + ')';
+  })();
+
+  renderAll();
+  show('p-today');
+})();
+</script>
+
+</body>
+</html>
